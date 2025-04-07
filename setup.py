@@ -5,13 +5,13 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="cleanpad",
-    version="0.1.0",
+    version="0.1.1",
     author="Omdeep Borkar",
     author_email="omdeeborkar@gmail.com",
     description="Text cleaner and formatter for handling messy copy-pasted content",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/yourusername/cleanpad",
+    url="https://github.com/Omdeepb69/cleanpad",
     packages=find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
