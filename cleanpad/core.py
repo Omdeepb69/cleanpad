@@ -1,3 +1,10 @@
+"""
+cleanpad - Text Cleaner & Formatter
+
+A versatile Python library for cleaning and formatting messy text, particularly useful 
+for handling copy-pasted content with unwanted formatting.
+"""
+
 import re
 import unicodedata
 import string
@@ -21,7 +28,9 @@ class CleanPad:
         Returns:
             str: Text with normalized whitespace
         """
+        # Replace multiple spaces with single space
         result = re.sub(r'\s+', ' ', text)
+        # Strip leading and trailing whitespace
         return result.strip()
     
     @staticmethod
@@ -37,9 +46,12 @@ class CleanPad:
             str: Text with cleaned line breaks
         """
         if preserve_paragraphs:
+            # Replace 3+ newlines with two newlines (paragraph break)
             text = re.sub(r'\n{3,}', '\n\n', text)
+            # Replace single newline with space if not a paragraph break
             text = re.sub(r'(?<!\n)\n(?!\n)', ' ', text)
         else:
+            # Replace all newlines with spaces
             text = re.sub(r'\n+', ' ', text)
         
         return CleanPad.clean_whitespace(text)
@@ -84,6 +96,7 @@ class CleanPad:
         Returns:
             str: Text with bullet points removed or replaced
         """
+        # Handle various bullet point types (•, -, *, >, etc.)
         bullet_pattern = r'^\s*[•\-\*\>\+\◦\‣\⁃\⦿\⦾\⁌\⁍]+'
         
         lines = text.split('\n')
@@ -108,17 +121,22 @@ class CleanPad:
         Returns:
             List[str]: A Python list containing each item as a string
         """
+        # First try to detect the format
         if '\n' in text and ('•' in text or '-' in text or '*' in text):
+            # Appears to be a bullet list
             text = CleanPad.clean_bullet_points(text)
             items = [line for line in text.split('\n') if line.strip()]
         elif text.count('\n') > text.count(','):
+            # More newlines than commas, likely newline separated
             items = text.split('\n')
         else:
+            # Default to comma separated
             items = text.split(',')
         
         if strip_items:
             items = [item.strip() for item in items]
         
+        # Remove empty items
         return [item for item in items if item]
     
     @staticmethod
@@ -134,6 +152,8 @@ class CleanPad:
             Dict[str, str]: A Python dictionary with the extracted key-value pairs
         """
         result = {}
+        
+        # Try to detect the delimiter (: or =)
         delimiter = ':' if text.count(':') > text.count('=') else '='
         
         lines = text.split('\n')
@@ -142,7 +162,7 @@ class CleanPad:
             if not line or delimiter not in line:
                 continue
                 
-            parts = line.split(delimiter, 1)
+            parts = line.split(delimiter, 1)  # Split only on first occurrence
             if len(parts) == 2:
                 key = parts[0].strip()
                 value = parts[1].strip()
@@ -174,7 +194,9 @@ class CleanPad:
         Returns:
             str: Text with normalized quotes
         """
+        # Replace fancy single quotes
         text = re.sub(r'['']', "'", text)
+        # Replace fancy double quotes
         text = re.sub(r'[""]', '"', text)
         return text
     
@@ -237,10 +259,14 @@ class CleanPad:
         Returns:
             str: Text with normalized spacing
         """
+        # Remove space before punctuation
         text = re.sub(r'\s+([,.;:!?)])', r'\1', text)
+        # Add space after punctuation unless followed by another punctuation mark
         text = re.sub(r'([,.;:!?])([^\s,.;:!?)])', r'\1 \2', text)
+        # Remove space after opening parenthesis and before closing parenthesis
         text = re.sub(r'\(\s+', '(', text)
         text = re.sub(r'\s+\)', ')', text)
+        
         return text
     
     @staticmethod
@@ -254,18 +280,22 @@ class CleanPad:
         Returns:
             Union[List, Dict, str]: Parsed data structure or original string if parsing fails
         """
+        # Clean the text first
         text = text.strip()
         
+        # Try JSON first
         try:
             return json.loads(text)
         except json.JSONDecodeError:
             pass
             
+        # Try Python literal evaluation (safer than eval)
         try:
             return ast.literal_eval(text)
         except (SyntaxError, ValueError):
             pass
             
+        # If all fails, try our to_list or to_dict methods
         if ':' in text or '=' in text:
             try:
                 return CleanPad.to_dict(text)
@@ -277,6 +307,7 @@ class CleanPad:
         except Exception:
             pass
             
+        # Return original if all conversions fail
         return text
     
     @staticmethod
@@ -291,7 +322,9 @@ class CleanPad:
         Returns:
             str: Text with standardized line endings
         """
+        # First convert all to \n
         text = text.replace('\r\n', '\n').replace('\r', '\n')
+        # Then convert all to desired ending
         if ending != '\n':
             text = text.replace('\n', ending)
         return text
@@ -308,14 +341,16 @@ class CleanPad:
             str: Text with cleaned indentation
         """
         lines = text.split('\n')
-        prefix_length = float('inf')
         
+        # Check for common indentation to remove
+        prefix_length = float('inf')
         for line in lines:
-            if line.strip():
+            if line.strip():  # Skip empty lines
                 spaces = len(line) - len(line.lstrip())
                 prefix_length = min(prefix_length, spaces)
                 
         if prefix_length > 0 and prefix_length != float('inf'):
+            # Remove common indentation
             cleaned_lines = [line[prefix_length:] if line.strip() else line for line in lines]
             return '\n'.join(cleaned_lines)
         
@@ -332,26 +367,74 @@ class CleanPad:
         Returns:
             str: Text with normalized characters
         """
+        # Decompose Unicode characters and remove combining characters
         return ''.join(
             c for c in unicodedata.normalize('NFKD', text)
             if not unicodedata.combining(c)
         )
 
 
-# Create convenience functions at module level
-clean_whitespace = CleanPad.clean_whitespace
-clean_line_breaks = CleanPad.clean_line_breaks
-remove_emojis = CleanPad.remove_emojis
-clean_bullet_points = CleanPad.clean_bullet_points
-to_list = CleanPad.to_list
-to_dict = CleanPad.to_dict
-remove_html_tags = CleanPad.remove_html_tags
-normalize_quotes = CleanPad.normalize_quotes
-remove_urls = CleanPad.remove_urls
-remove_special_chars = CleanPad.remove_special_chars
-extract_numbers = CleanPad.extract_numbers
-normalize_spacing = CleanPad.normalize_spacing
-try_parse_data = CleanPad.try_parse_data
-standardize_line_endings = CleanPad.standardize_line_endings
-clean_indentation = CleanPad.clean_indentation
-normalize_characters = CleanPad.normalize_characters
+# Create convenience functions at module level for direct import
+def clean_whitespace(text: str) -> str:
+    """Clean excess whitespace."""
+    return CleanPad.clean_whitespace(text)
+
+def clean_line_breaks(text: str, preserve_paragraphs: bool = True) -> str:
+    """Clean excessive line breaks."""
+    return CleanPad.clean_line_breaks(text, preserve_paragraphs)
+
+def remove_emojis(text: str) -> str:
+    """Remove emoji characters."""
+    return CleanPad.remove_emojis(text)
+
+def clean_bullet_points(text: str, bullet_replacement: str = "") -> str:
+    """Clean bullet points from text."""
+    return CleanPad.clean_bullet_points(text, bullet_replacement)
+
+def to_list(text: str, strip_items: bool = True) -> List[str]:
+    """Convert text to Python list."""
+    return CleanPad.to_list(text, strip_items)
+
+def to_dict(text: str) -> Dict[str, str]:
+    """Convert text to Python dictionary."""
+    return CleanPad.to_dict(text)
+
+def remove_html_tags(text: str) -> str:
+    """Remove HTML tags."""
+    return CleanPad.remove_html_tags(text)
+
+def normalize_quotes(text: str) -> str:
+    """Normalize quote styles."""
+    return CleanPad.normalize_quotes(text)
+
+def remove_urls(text: str, replacement: str = "") -> str:
+    """Remove URLs from text."""
+    return CleanPad.remove_urls(text, replacement)
+
+def remove_special_chars(text: str, keep: Optional[str] = None) -> str:
+    """Remove special characters."""
+    return CleanPad.remove_special_chars(text, keep)
+
+def extract_numbers(text: str) -> List[float]:
+    """Extract numbers from text."""
+    return CleanPad.extract_numbers(text)
+
+def normalize_spacing(text: str) -> str:
+    """Normalize spacing around punctuation."""
+    return CleanPad.normalize_spacing(text)
+
+def try_parse_data(text: str) -> Union[List, Dict, str]:
+    """Try to parse text as structured data."""
+    return CleanPad.try_parse_data(text)
+
+def standardize_line_endings(text: str, ending: str = '\n') -> str:
+    """Standardize line endings."""
+    return CleanPad.standardize_line_endings(text, ending)
+
+def clean_indentation(text: str) -> str:
+    """Clean inconsistent indentation."""
+    return CleanPad.clean_indentation(text)
+
+def normalize_characters(text: str) -> str:
+    """Normalize Unicode characters."""
+    return CleanPad.normalize_characters(text)
